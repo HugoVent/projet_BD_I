@@ -1,6 +1,5 @@
 import sqlite3 
 from utility import *
-
 #database = input("Sur quelle base de données souhaitez vous effectuer des requêtes SPJRUD ? \n")
 #database = 'project.db'
 #Establish the connection with the database

@@ -1,16 +1,16 @@
 import sqlite3 
-conn = sqlite3.connect('/Users/hugo/Desktop/project.db')
+conn = sqlite3.connect('/Users/hugo/Documents/School/pgm/hugo_dev/BAB2/DB/prj_spjrud2sql/project.db')
 c = conn.cursor()
 
 # Create table
-c.execute('''CREATE TABLE stocks
-             (date text, trans text, symbol text, qty real, price real)''')
+#c.execute('''CREATE TABLE id
+ #            (name text, familyName text)''')
 
 # Insert a row of data
-c.execute("INSERT INTO stocks VALUES ('2006-01-05','BUY','RHAT',100,35.14)")
+c.execute("INSERT INTO id VALUES ('Hugo', 'Venturoso')")
 
 # Just a simple test 
-for row in c.execute("SELECT * FROM stocks") :
+for row in c.execute("SELECT * FROM id") :
     print(row)
 
 # Save (commit) the changes
