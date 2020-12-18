@@ -22,27 +22,8 @@ class Database():
     operator : str
         The operator of the operation (=, >=, >, <, <=, <>) 
 
-    Methods
-    -------
-    is_in_database(table)
-        Return True if the table is in the database, else it returns False
-
-    get_all_tables():
-        Get all the tables from the database
-    
-    start():
-        Start the connection to the database
-
-    close():
-        Save and close the connection to the database
-
     """
     def __init__(self, name):
-        """
-        Init a database 
-        Args:
-            name (str) : 
-        """
         self.name = name
         self.conn = sqlite3.connect(self.name)
         self.tables = []
@@ -50,15 +31,6 @@ class Database():
 
     def __str__(self):
         return self.name
-
-    def is_in_database(self, table):
-        """ Check if the table is in the database 
-        
-        Parameters:
-        ------
-        table : str 
-        """
-        return table in self.tables
 
     def get_all_tables(self):
         """ Get all the tables from the database"""
@@ -80,10 +52,105 @@ class Database():
         self.conn.close()
         self = None
 
-    def get_cursor(self): #to delete
+    def get_cursor(self):
         c = self.conn.cursor()
         return c
 
+class Relation():
+    """ Create a relation based on a sql table
+    
+    Attributes 
+    ----------
+    database : Database 
+        The database that contains the table
+
+    cursor : sqlite3.cursor
+    
+    table : str
+        The name of the table
+
+    arguments_list = list of str
+        List of attributes from the table
+    """
+
+    def __init__(self, database, table):
+        self.database = database
+        self.cursor = self.database.get_cursor()
+        self.table = table
+        self.arguments_list = self.get_attributes()
+
+    def __str__(self):
+        return str(self.table)
+
+    def get_attributes(self):
+        attributes = {} 
+        all_tables = self.cursor.execute('PRAGMA table_info('+self.table+');')
+        for tup in all_tables :
+            attributes[tup[1]] = tup[2]
+            print(tup[1], tup[2])
+        return attributes
+
+    def is_in_database(self):
+        return self.table in self.database.tables
+
+    def is_in_table(self, column_name):
+        return column_name in self.arguments_list
+
+    def verify_type(self, primitive_type, column_name, old_table):
+        """ Verify if the type of a constant is equal to the type of a column
+
+        Parameters:
+        ----------
+        primitive_type: int, str, boolean
+            type of the constant
+        
+        column_name = str
+            the name of the column that we are going to check
+
+        old_table = list of str
+            to get all the attributes
+        """
+        arguments_list = old_table.get_attributes()
+        if(self.is_in_table(column_name)):
+            type_ = arguments_list[column_name]
+            if(primitive_type == str):
+                if(type_ == ('text') or type_ == ('char')):
+                    return True
+                else:
+                    return False
+            elif(primitive_type == int):
+                if(type_ ==('int')):
+                    return True
+                else:
+                    return False
+            elif(primitive_type == True or primitive_type == False):
+                if(type_ ==('bit')):
+                    return True
+                else:
+                    return False
+            elif(primitive_type == float):
+                if(type_ ==('float')):
+                    return True
+                else:
+                    return False
+
+    def get_column_type(self, column_name):
+        """Get the type of a column
+
+        Parameters:
+        ----------
+        column_name : str
+            The name of the column
+        """
+        all_columns = self.cursor.execute('PRAGMA table_info('+self.table+');')
+        all_columns_type = {}
+        res = ""
+        for tup in all_columns :
+            all_columns_type[tup[1]] = tup[2]
+        if (column_name in all_columns_type):
+            res = all_columns_type.get(column_name)
+        return res
+       
 class Operation():
     """ 
     A class that represents an operation between 2 expressions
@@ -104,42 +171,22 @@ class Operation():
     """
 
     def __init__(self, left_expr, right_expr):
-        """
-        Parameters
-        ----------
-        left_expr : str or Cst
-            The left expression in a operation, can be a constant or a column name
-
-        right_expr : str or Cst
-            The right expression in a operation, can be a constant or a column name
-        
-        operator : str
-            The operator of the operation (=, >=, >, <, <=, <>) 
-        """
         self.left_expr = left_expr
         self.right_expr = right_expr
         self.operator = None 
 
     def __str__(self):
         return f'{self.left_expr} {self.operator} {self.right_expr}'
-####################################################
 
 class Eq(Operation):
     """
-    A class that represents an operation between 2 expressions
+    A class that represents an equality between 2 expressions
     
     ...
 
     Attributes
     ----------
-    left_expr : str or Cst
-        The left expression in a operation, can be a constant or a column name
-
-    right_expr : str or Cst
-        The right expression in a operation, can be a constant or a column name
-
-    operator : str
-        The operator of the operation (=, >=, >, <, <=, <>) 
+    same as Operation
     """
     
     def __init__(self, left_expr, right_expr):
@@ -148,8 +195,17 @@ class Eq(Operation):
     
     def __str__(self):
         return super().__str__()
+
 class Gt(Operation):
-    """Greater than..."""
+    """
+    A class that represents an greater than between 2 expressions
+    
+    ...
+
+    Attributes
+    ----------
+    same as Operation
+    """
     def __init__(self, left_expr, right_expr):
         super().__init__(left_expr, right_expr)
         self.operator = ">"
@@ -158,7 +214,15 @@ class Gt(Operation):
         return super().__str__()
 
 class Gte(Operation):
-    """Greater than..."""
+    """
+    A class that represents a greater or equal between 2 expressions
+    
+    ...
+
+    Attributes
+    ----------
+    same as Operation
+    """    
     def __init__(self, left_expr, right_expr):
         super().__init__(left_expr, right_expr)
         self.operator = ">="
@@ -167,7 +231,16 @@ class Gte(Operation):
         return super().__str__()
 
 class St(Operation):
-    """Greater than..."""
+    """
+    A class that represents a smaller than between 2 expressions
+    
+    ...
+
+    Attributes
+    ----------
+    same as Operation
+    """    
+    
     def __init__(self, left_expr, right_expr):
         super().__init__(left_expr, right_expr)
         self.operator = "<"
@@ -176,7 +249,15 @@ class St(Operation):
         return super().__str__()
 
 class Ste(Operation):
-    """Greater than..."""
+    """
+    A class that represents a smaller or equal than between 2 expressions
+    
+    ...
+
+    Attributes
+    ----------
+    same as Operation
+    """  
     def __init__(self, left_expr, right_expr):
         super().__init__(left_expr, right_expr)
         self.operator = "<="
@@ -185,6 +266,15 @@ class Ste(Operation):
         return super().__str__()
 
 class Diff(Operation):
+    """
+    A class that represents a difference between 2 expressions
+    
+    ...
+
+    Attributes
+    ----------
+    same as Operation
+    """  
     def __init__(self, left_expr, right_expr):
         super().__init__( left_expr, right_expr)
         self.operator = '<>'
@@ -192,10 +282,15 @@ class Diff(Operation):
     def __str__(self):
         return super().__str__()
 
-
-
-
 class Cst():
+    """ A class that represents a constant value
+    
+    Attributes  
+    ----------
+
+    value : str, int, boolean, ...
+        the value of the constant
+    """
     def __init__(self, value):
         self.value = value 
 
@@ -203,67 +298,5 @@ class Cst():
         return type(self.value)
 
     def __str__(self):
-        return f'"{self.value}"'
-####################################################
+        return f'{self.value}'
 
-class Relation():
-    """ Create a relation based on a sql table"""
-
-    def __init__(self, database, table):
-        self.database = database
-        self.cursor = self.database.cursor
-        self.table = table
-
-    def __str__(self):
-        return str(self.table)
-
-    def get_attributes(self) :
-        liste = {} 
-        infos = self.cursor.execute('PRAGMA table_info('+self.table+');')
-        for tup in infos :
-            liste[tup[1]] = tup[2]
-            print(tup[1], tup[2])
-        return liste
-
-    def is_in_database_(self):
-        print(self.database.tables)
-        return self.table in self.database.tables
-
-    def is_in_database(self, column_name, arguments_list):
-        return column_name in arguments_list
-
-    def verify_type(self, primitive_type, column_name, old_table):
-        arguments_list = old_table.get_attributes()
-        if(self.is_in_database(column_name, arguments_list)):
-            print(primitive_type == int)
-            input(1)
-            type_ = arguments_list[column_name]
-            print(column_name)
-            input()
-            if(primitive_type == str):
-                input(2)
-                if(type_ == ('text')):
-                    return True
-                else:
-                    return False
-            if(primitive_type == int):
-                input(3)
-
-                if(type_ ==('int')):
-                    return True
-                else:
-                    return False
-
-    def get_column_type(self, column_name):
-        all_columns = self.cursor.execute('PRAGMA table_info('+self.table+');')
-        dictio = {}
-        for tup in all_columns :
-            print(tup[1], tup[2])
-            dictio[tup[1]] = tup[2]
-        if (column_name in dictio):
-            res = dictio.get(column_name)
-        print(dictio)
-        #return res
-       
-    
-###################################@
